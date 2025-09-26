@@ -1,37 +1,34 @@
 # 🐕 DogTektor
 
-AI/ML powered desktop application for real-time dog bark detection and analysis. Perfect for monitoring barking patterns, identifying different dogs, and generating insights about canine activity in your area.
+AI/ML powered web application for real-time dog bark detection and analysis. Built with Next.js 15, TypeScript, and shadcn/ui for modern web-based monitoring of canine activity.
 
 ## Features
 
-- **Real-time Audio Detection**: Continuous monitoring using your microphone
-- **AI-Powered Bark Recognition**: Machine learning algorithms to distinguish dog barks from other sounds
+- **Real-time Audio Detection**: Continuous monitoring using your browser's microphone
+- **AI-Powered Bark Recognition**: Machine learning algorithms to distinguish dog barks from other sounds  
 - **Dog Identification**: Segment and classify barks from different dogs
 - **Statistics & Analytics**: Track barking frequency, patterns, and trends over time
-- **Cross-platform Desktop App**: Built with Electron for Windows, macOS, and Linux
-- **Raspberry Pi Ready**: Optimized for deployment on embedded devices
-- **User-Friendly Interface**: Modern React-based UI with real-time visualizations
-
-## Screenshots
-
-*Coming soon - app screenshots will be added here*
+- **Modern Web Interface**: Built with Next.js 15, TypeScript, and shadcn/ui components
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
+- **Real-time Visualization**: Live audio frequency spectrum display
 
 ## Technology Stack
 
-- **Desktop Framework**: Electron
-- **Frontend**: React with modern JavaScript
+- **Framework**: Next.js 15 with App Router
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS v4
+- **UI Components**: shadcn/ui
 - **Audio Processing**: Web Audio API
-- **Machine Learning**: TensorFlow.js (future integration)
-- **Build Tool**: Vite
-- **Styling**: Modern CSS with gradient themes
+- **State Management**: React hooks
+- **Icons**: Lucide React
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 16 or higher
-- npm or yarn package manager
-- Microphone access permissions
+- Node.js 18 or higher
+- Modern web browser with microphone support
+- Microphone permissions
 
 ### Installation
 
@@ -46,88 +43,107 @@ cd dogtektor
 npm install
 ```
 
-3. Start in development mode:
+3. Start the development server:
 ```bash
 npm run dev
 ```
 
-4. In a new terminal, start the Electron app:
-```bash
-npm start
-```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
 
 ### Building for Production
 
 ```bash
-# Build the renderer
-npm run build:renderer
+# Build the application
+npm run build
 
-# Package the app
-npm run dist
+# Start production server
+npm start
 ```
 
 ## Usage
 
-1. **Launch the Application**: Start DogTektor from your applications folder or run `npm start`
+1. **Open the Application**: Navigate to the web app in your browser
 
 2. **Grant Microphone Permissions**: Allow the app to access your microphone when prompted
 
-3. **Configure Settings**: 
-   - Click the settings menu (File → Settings or Cmd/Ctrl+,)
-   - Select your preferred microphone
-   - Adjust sensitivity and detection thresholds
-   - Configure notification preferences
+3. **Start Detection**: Click "Start Detection" to begin monitoring
 
-4. **Start Detection**: Click "Start Detection" or use Cmd/Ctrl+Space
-
-5. **Monitor Results**: 
+4. **Monitor Results**: 
    - View real-time audio visualization
    - See detected dogs and their bark counts
-   - Analyze hourly activity patterns
+   - Analyze session statistics
 
-## Configuration
+5. **Track Statistics**:
+   - Monitor total barks detected
+   - View barks per hour
+   - Identify different dogs in your environment
 
-### Audio Settings
-- **Microphone Selection**: Choose from available audio input devices
-- **Sensitivity**: Adjust detection sensitivity (0-100%)
-- **Bark Threshold**: Minimum confidence level for bark detection
+## Features in Detail
 
-### Detection Settings
-- **Auto-naming**: Automatically assign names to detected dogs
-- **Notifications**: System notifications for bark detection
-- **Statistics Retention**: How long to keep historical data
+### Real-time Audio Processing
+- Captures microphone input using Web Audio API
+- Displays live frequency spectrum visualization
+- Processes audio for bark detection patterns
+
+### Bark Detection Algorithm
+- Analyzes audio frequency characteristics
+- Identifies patterns typical of dog barks
+- Filters out false positives from other sounds
+
+### Dog Classification
+- Assigns unique identifiers to different dogs
+- Tracks individual bark counts and patterns
+- Shows confidence levels for each detection
+
+### Statistics Dashboard
+- Real-time session statistics
+- Hourly activity tracking  
+- Individual dog monitoring
+- Session duration tracking
+
+## Browser Compatibility
+
+- Chrome/Chromium (recommended)
+- Firefox
+- Safari
+- Edge
+
+*Note: Requires browsers that support Web Audio API and getUserMedia*
 
 ## Development
 
 ### Project Structure
 ```
 src/
-├── main.js              # Electron main process
-├── preload.js           # Electron preload script
-├── index.html           # Main HTML template
-└── renderer/
-    ├── App.jsx          # Main React application
-    ├── components/      # React components
-    │   ├── AudioVisualizer.jsx
-    │   ├── BarkStats.jsx
-    │   ├── DetectionControls.jsx
-    │   └── Settings.jsx
-    └── styles/          # CSS stylesheets
-        └── App.css
+├── app/
+│   ├── layout.tsx       # Root layout with metadata
+│   ├── page.tsx         # Home page
+│   └── globals.css      # Global styles with shadcn/ui variables
+├── components/
+│   ├── ui/              # shadcn/ui components
+│   │   ├── button.tsx   # Button component
+│   │   └── card.tsx     # Card components
+│   └── dogtektor-dashboard.tsx  # Main app component
+└── lib/
+    └── utils.ts         # Utility functions for cn()
 ```
 
 ### Available Scripts
 
-- `npm start` - Start Electron app
-- `npm run dev` - Start Electron in development mode
-- `npm run dev:renderer` - Start Vite dev server
-- `npm run build:renderer` - Build React app
-- `npm run build` - Build complete application
-- `npm run dist` - Package for distribution
+- `npm run dev` - Start development server with Turbopack
+- `npm run build` - Build for production
+- `npm run start` - Start production server
 - `npm run lint` - Run ESLint
-- `npm test` - Run tests
 
-### Contributing
+### Adding shadcn/ui Components
+
+```bash
+npx shadcn@latest add button
+npx shadcn@latest add card
+npx shadcn@latest add input
+```
+
+## Contributing
 
 1. Fork the repository
 2. Create a feature branch (`git checkout -b feature/amazing-feature`)
@@ -137,47 +153,40 @@ src/
 
 ## Roadmap
 
-- [ ] **Enhanced ML Models**: Integrate TensorFlow.js for improved bark detection
-- [ ] **Dog Voice Recognition**: Advanced algorithms to identify individual dogs
-- [ ] **Cloud Sync**: Optional cloud storage for statistics and settings
-- [ ] **Mobile Companion**: React Native app for remote monitoring
-- [ ] **Smart Notifications**: Intelligent alerts based on patterns
-- [ ] **Audio Export**: Save and analyze audio clips
-- [ ] **Multiple Microphones**: Support for multiple input sources
-- [ ] **API Integration**: Connect with smart home systems
-- [ ] **Advanced Analytics**: Machine learning insights on bark patterns
-
-## Hardware Requirements
-
-### Minimum Requirements
-- 2GB RAM
-- 1GB available disk space
-- Microphone input
-- Audio output (speakers/headphones)
-
-### Recommended for Raspberry Pi
-- Raspberry Pi 4 (4GB RAM recommended)
-- External USB microphone for better audio quality
-- Class 10 microSD card (32GB+)
+- [ ] **Enhanced ML Models**: Advanced bark detection algorithms using TensorFlow.js
+- [ ] **Dog Voice Recognition**: Improved individual dog identification  
+- [ ] **Data Export**: CSV/JSON export of statistics
+- [ ] **Settings Panel**: Configurable detection parameters
+- [ ] **Notifications**: Browser notifications for bark events
+- [ ] **Historical Data**: Long-term bark pattern analysis
+- [ ] **PWA Support**: Progressive Web App capabilities
+- [ ] **Multi-language Support**: Internationalization
 
 ## Troubleshooting
 
 ### Common Issues
 
 **Microphone not detected**
-- Check system permissions for microphone access
-- Ensure microphone is properly connected
-- Restart the application
+- Ensure browser has microphone permissions
+- Check if microphone is being used by other applications
+- Try refreshing the page
 
 **No barks detected**
-- Adjust sensitivity settings
-- Check microphone levels
 - Verify microphone is working with other applications
+- Check if there are actual dog sounds in the environment
+- Audio levels might be too low
 
 **Performance issues**
-- Close other resource-intensive applications
-- Lower the detection sensitivity
-- Check available system memory
+- Close other resource-intensive browser tabs
+- Use Chrome/Chromium for best performance
+- Ensure sufficient system memory
+
+## Privacy & Security
+
+- All audio processing happens locally in your browser
+- No audio data is transmitted to external servers
+- No personal data is collected or stored
+- Microphone access can be revoked at any time
 
 ## License
 
@@ -186,14 +195,14 @@ MIT License - see [LICENSE](LICENSE) file for details.
 ## Acknowledgments
 
 - Built with ❤️ for dog lovers everywhere
-- Inspired by the need to understand our furry friends better
+- Powered by modern web technologies
 - Thanks to the open-source community for amazing tools and libraries
 
 ## Support
 
 - 📧 Email: [Your Email]
 - 🐛 Issues: [GitHub Issues](https://github.com/elemarin/dogtektor/issues)
-- 📖 Wiki: [Project Wiki](https://github.com/elemarin/dogtektor/wiki)
+- 📖 Docs: [Project Wiki](https://github.com/elemarin/dogtektor/wiki)
 
 ---
 
