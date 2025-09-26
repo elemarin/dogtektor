@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Mic, MicOff, Settings, Volume2, Dog, BarChart3 } from "lucide-react";
@@ -32,6 +32,7 @@ export function DogTektorDashboard() {
   const lastBarkTime = useRef<number>(0);
   const backgroundNoise = useRef<Array<number>>([]);
   const adaptiveThreshold = useRef<number>(75);
+  const hasAutoStarted = useRef<boolean>(false);
 
   // Session timer
   useEffect(() => {
@@ -58,7 +59,7 @@ export function DogTektorDashboard() {
   };
 
   // Enhanced bark detection algorithm with temporal analysis and adaptive thresholds
-  const detectBark = (frequencyData: Uint8Array) => {
+  const detectBark = useCallback((frequencyData: Uint8Array) => {
     const currentTime = Date.now();
     const averageFreq = frequencyData.reduce((sum, value) => sum + value, 0) / frequencyData.length;
     const lowFreq = frequencyData.slice(0, 50).reduce((sum, value) => sum + value, 0) / 50;
@@ -77,33 +78,60 @@ export function DogTektorDashboard() {
     
     // Calculate adaptive threshold based on background noise
     const avgBackground = backgroundNoise.current.reduce((sum, val) => sum + val, 0) / backgroundNoise.current.length;
-    adaptiveThreshold.current = Math.max(50, Math.min(100, avgBackground * 1.8)); // Dynamic threshold
+    adaptiveThreshold.current = Math.max(20, Math.min(80, avgBackground * 1.5)); // Lowered thresholds
     
     // Clean up old detections (older than 2 seconds)
     recentDetections.current = recentDetections.current.filter(d => currentTime - d.time < 2000);
     
     // Enhanced bark detection using multiple criteria with adaptive thresholds
-    const energyThreshold = 35000; // Base energy threshold
+    const energyThreshold = 15000; // Lowered energy threshold
     const barkThreshold = adaptiveThreshold.current; // Adaptive frequency threshold
-    const minAverageFreq = Math.max(30, avgBackground * 1.2); // Adaptive average threshold
+    const minAverageFreq = Math.max(15, avgBackground * 1.1); // Lowered average threshold
     
     // Bark characteristics: strong mid frequencies, decent energy, proper spectral balance
     const hasStrongMidFreq = midFreq > barkThreshold;
-    const hasProperBalance = midFreq > lowFreq && midFreq > highFreq * 0.7;
+    const hasProperBalance = midFreq > lowFreq && midFreq > highFreq * 0.5; // More lenient
     const hasGoodAverage = averageFreq > minAverageFreq;
-    const hasReasonableSpectrum = spectralCentroid > 15 && spectralCentroid < 280;
+    const hasReasonableSpectrum = spectralCentroid > 10 && spectralCentroid < 350; // Wider range
     
     // Dynamic energy threshold based on recent activity
     const recentAvgEnergy = recentDetections.current.reduce((sum, d) => sum + d.energy, 0) / Math.max(recentDetections.current.length, 1);
-    const dynamicEnergyThreshold = Math.max(energyThreshold, recentAvgEnergy * 0.3);
+    const dynamicEnergyThreshold = Math.max(energyThreshold, recentAvgEnergy * 0.2); // More lenient
     const hasAdequateEnergy = totalEnergy > dynamicEnergyThreshold;
     
     // Temporal filtering: prevent too frequent detections (debouncing)
     const timeSinceLastBark = currentTime - lastBarkTime.current;
-    const minBarkInterval = 150; // Reduced to 150ms for better sensitivity
+    const minBarkInterval = 100; // Reduced to 100ms for better sensitivity
     
     // Combined detection criteria
     const isBark = hasStrongMidFreq && hasAdequateEnergy && hasProperBalance && hasGoodAverage && hasReasonableSpectrum && timeSinceLastBark > minBarkInterval;
+    
+    // Debug logging - log audio metrics when there's significant audio activity
+    if (averageFreq > 20 || totalEnergy > 10000) {
+      console.log('🎵 Audio Analysis:', {
+        averageFreq: Math.round(averageFreq),
+        lowFreq: Math.round(lowFreq),
+        midFreq: Math.round(midFreq),
+        highFreq: Math.round(highFreq),
+        totalEnergy: Math.round(totalEnergy),
+        spectralCentroid: Math.round(spectralCentroid),
+        thresholds: {
+          barkThreshold: Math.round(barkThreshold),
+          energyThreshold,
+          dynamicEnergyThreshold: Math.round(dynamicEnergyThreshold),
+          minAverageFreq: Math.round(minAverageFreq)
+        },
+        criteria: {
+          hasStrongMidFreq,
+          hasAdequateEnergy,
+          hasProperBalance,
+          hasGoodAverage,
+          hasReasonableSpectrum,
+          timingOK: timeSinceLastBark > minBarkInterval
+        },
+        isBark
+      });
+    }
     
     // Add current detection data for pattern analysis
     recentDetections.current.push({
@@ -113,6 +141,12 @@ export function DogTektorDashboard() {
     });
     
     if (isBark) {
+      console.log('🐕 BARK DETECTED!', {
+        midFreq: Math.round(midFreq),
+        totalEnergy: Math.round(totalEnergy),
+        spectralCentroid: Math.round(spectralCentroid)
+      });
+      
       // Calculate confidence based on multiple factors
       const energyConfidence = Math.min(totalEnergy / (dynamicEnergyThreshold * 3), 1.0);
       const freqConfidence = Math.min(midFreq / (barkThreshold * 1.6), 1.0);
@@ -128,14 +162,14 @@ export function DogTektorDashboard() {
       const confidence = Math.min(((energyConfidence + freqConfidence + balanceConfidence + temporalConfidence) / 4) + adaptiveBonus, 1.0);
       
       // Enhanced dog identification based on spectral and temporal characteristics
-      const spectralRange = Math.floor((spectralCentroid - 15) / 35) % 3;
-      const energyRange = Math.floor(totalEnergy / 80000) % 3;
+      const spectralRange = Math.floor((spectralCentroid - 10) / 30) % 3;
+      const energyRange = Math.floor(totalEnergy / 50000) % 3;
       const dogId = ((spectralRange + energyRange) % 3) + 1;
       
       lastBarkTime.current = currentTime;
       handleBarkDetected(confidence, dogId);
     }
-  };
+  }, []); // No dependencies needed since it only uses refs and function parameters
 
   const handleBarkDetected = (confidence: number, dogId: number) => {
     setBarkCount(prev => prev + 1);
@@ -161,7 +195,7 @@ export function DogTektorDashboard() {
   };
 
   // Audio visualization
-  const draw = () => {
+  const draw = useCallback(() => {
     if (!analyserRef.current || !canvasRef.current) return;
 
     const canvas = canvasRef.current;
@@ -204,9 +238,9 @@ export function DogTektorDashboard() {
 
     // Continue animation
     animationRef.current = requestAnimationFrame(draw);
-  };
+  }, [isDetecting, detectBark]);
 
-  const startAudioCapture = async () => {
+  const startAudioCapture = useCallback(async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
@@ -230,7 +264,7 @@ export function DogTektorDashboard() {
       setError(`Microphone access denied: ${errorMessage}`);
       console.error('Error accessing microphone:', err);
     }
-  };
+  }, [draw]);
 
   const stopAudioCapture = () => {
     if (microphoneRef.current) {
@@ -248,10 +282,23 @@ export function DogTektorDashboard() {
     setAudioLevel(0);
   };
 
-  const handleStartDetection = () => {
+  const handleStartDetection = useCallback(() => {
     setIsDetecting(true);
     startAudioCapture();
-  };
+  }, [startAudioCapture]);
+
+  // Auto-start detection after component mount
+  useEffect(() => {
+    if (!hasAutoStarted.current && !isDetecting) {
+      const autoStartTimer = setTimeout(() => {
+        console.log('🚀 Auto-starting bark detection...');
+        hasAutoStarted.current = true;
+        handleStartDetection();
+      }, 1500); // 1.5 second delay to allow component to fully mount
+
+      return () => clearTimeout(autoStartTimer);
+    }
+  }, [handleStartDetection, isDetecting]);
 
   const handleStopDetection = () => {
     setIsDetecting(false);
