@@ -78,58 +78,67 @@ export function DogTektorDashboard() {
     
     // Calculate adaptive threshold based on background noise
     const avgBackground = backgroundNoise.current.reduce((sum, val) => sum + val, 0) / backgroundNoise.current.length;
-    adaptiveThreshold.current = Math.max(20, Math.min(80, avgBackground * 1.5)); // Lowered thresholds
+    adaptiveThreshold.current = Math.max(15, Math.min(60, avgBackground * 1.3)); // Even more lenient
     
     // Clean up old detections (older than 2 seconds)
     recentDetections.current = recentDetections.current.filter(d => currentTime - d.time < 2000);
     
-    // Enhanced bark detection using multiple criteria with adaptive thresholds
-    const energyThreshold = 15000; // Lowered energy threshold
-    const barkThreshold = adaptiveThreshold.current; // Adaptive frequency threshold
-    const minAverageFreq = Math.max(15, avgBackground * 1.1); // Lowered average threshold
+    // Much more lenient bark detection criteria
+    const energyThreshold = 5000; // Significantly lowered energy threshold
+    const barkThreshold = Math.max(15, adaptiveThreshold.current); // Much lower threshold
+    const minAverageFreq = Math.max(8, avgBackground * 0.8); // Very low average threshold
     
-    // Bark characteristics: strong mid frequencies, decent energy, proper spectral balance
+    // Individual criteria - much more lenient
     const hasStrongMidFreq = midFreq > barkThreshold;
-    const hasProperBalance = midFreq > lowFreq && midFreq > highFreq * 0.5; // More lenient
+    const hasProperBalance = midFreq > lowFreq * 0.7; // Much more lenient balance
     const hasGoodAverage = averageFreq > minAverageFreq;
-    const hasReasonableSpectrum = spectralCentroid > 10 && spectralCentroid < 350; // Wider range
-    
-    // Dynamic energy threshold based on recent activity
-    const recentAvgEnergy = recentDetections.current.reduce((sum, d) => sum + d.energy, 0) / Math.max(recentDetections.current.length, 1);
-    const dynamicEnergyThreshold = Math.max(energyThreshold, recentAvgEnergy * 0.2); // More lenient
-    const hasAdequateEnergy = totalEnergy > dynamicEnergyThreshold;
+    const hasReasonableSpectrum = spectralCentroid > 5 && spectralCentroid < 400; // Very wide range
+    const hasMinimumEnergy = totalEnergy > energyThreshold;
     
     // Temporal filtering: prevent too frequent detections (debouncing)
     const timeSinceLastBark = currentTime - lastBarkTime.current;
-    const minBarkInterval = 100; // Reduced to 100ms for better sensitivity
+    const minBarkInterval = 100; // 100ms debounce
+    const timingOK = timeSinceLastBark > minBarkInterval;
     
-    // Combined detection criteria
-    const isBark = hasStrongMidFreq && hasAdequateEnergy && hasProperBalance && hasGoodAverage && hasReasonableSpectrum && timeSinceLastBark > minBarkInterval;
+    // MUCH MORE LENIENT: Use OR instead of AND for some criteria
+    const hasAnySignificantFrequency = midFreq > 20 || highFreq > 15 || lowFreq > 15;
+    const hasBarkLikeCharacteristics = (hasStrongMidFreq || hasProperBalance) && hasGoodAverage;
     
-    // Debug logging - log audio metrics when there's significant audio activity
-    if (averageFreq > 20 || totalEnergy > 10000) {
-      console.log('🎵 Audio Analysis:', {
-        averageFreq: Math.round(averageFreq),
-        lowFreq: Math.round(lowFreq),
-        midFreq: Math.round(midFreq),
-        highFreq: Math.round(highFreq),
-        totalEnergy: Math.round(totalEnergy),
-        spectralCentroid: Math.round(spectralCentroid),
+    // New simplified detection: much more lenient
+    const isBark = hasMinimumEnergy && hasAnySignificantFrequency && hasBarkLikeCharacteristics && hasReasonableSpectrum && timingOK;
+    
+    // Enhanced debug logging - log ALL audio activity, not just significant
+    if (averageFreq > 5 || totalEnergy > 1000) {
+      console.log('🎵 Audio Analysis (DETAILED):', {
+        raw: { averageFreq, lowFreq, midFreq, highFreq, totalEnergy, spectralCentroid },
+        rounded: {
+          averageFreq: Math.round(averageFreq),
+          lowFreq: Math.round(lowFreq),
+          midFreq: Math.round(midFreq),
+          highFreq: Math.round(highFreq),
+          totalEnergy: Math.round(totalEnergy),
+          spectralCentroid: Math.round(spectralCentroid)
+        },
         thresholds: {
           barkThreshold: Math.round(barkThreshold),
           energyThreshold,
-          dynamicEnergyThreshold: Math.round(dynamicEnergyThreshold),
-          minAverageFreq: Math.round(minAverageFreq)
+          minAverageFreq: Math.round(minAverageFreq),
+          avgBackground: Math.round(avgBackground)
         },
         criteria: {
-          hasStrongMidFreq,
-          hasAdequateEnergy,
-          hasProperBalance,
-          hasGoodAverage,
-          hasReasonableSpectrum,
-          timingOK: timeSinceLastBark > minBarkInterval
+          hasStrongMidFreq: `${hasStrongMidFreq} (${Math.round(midFreq)} > ${Math.round(barkThreshold)})`,
+          hasProperBalance: `${hasProperBalance} (${Math.round(midFreq)} > ${Math.round(lowFreq * 0.7)})`,
+          hasGoodAverage: `${hasGoodAverage} (${Math.round(averageFreq)} > ${Math.round(minAverageFreq)})`,
+          hasReasonableSpectrum: `${hasReasonableSpectrum} (${Math.round(spectralCentroid)} in 5-400 range)`,
+          hasMinimumEnergy: `${hasMinimumEnergy} (${Math.round(totalEnergy)} > ${energyThreshold})`,
+          hasAnySignificantFrequency: `${hasAnySignificantFrequency}`,
+          hasBarkLikeCharacteristics: `${hasBarkLikeCharacteristics}`,
+          timingOK: `${timingOK} (${Math.round(timeSinceLastBark)}ms since last)`
         },
-        isBark
+        result: {
+          isBark,
+          confidence: isBark ? 'Would detect!' : 'No detection'
+        }
       });
     }
     
@@ -141,30 +150,23 @@ export function DogTektorDashboard() {
     });
     
     if (isBark) {
-      console.log('🐕 BARK DETECTED!', {
+      console.log('🐕 BARK DETECTED! (SIMPLIFIED ALGORITHM)', {
         midFreq: Math.round(midFreq),
         totalEnergy: Math.round(totalEnergy),
-        spectralCentroid: Math.round(spectralCentroid)
+        spectralCentroid: Math.round(spectralCentroid),
+        averageFreq: Math.round(averageFreq)
       });
       
-      // Calculate confidence based on multiple factors
-      const energyConfidence = Math.min(totalEnergy / (dynamicEnergyThreshold * 3), 1.0);
-      const freqConfidence = Math.min(midFreq / (barkThreshold * 1.6), 1.0);
-      const balanceConfidence = Math.min(midFreq / Math.max(lowFreq, highFreq, 1), 1.0);
+      // Simplified confidence calculation
+      const confidence = Math.min(
+        (totalEnergy / (energyThreshold * 5)) * 0.4 +
+        (midFreq / (barkThreshold * 2)) * 0.4 +
+        (averageFreq / (minAverageFreq * 2)) * 0.2,
+        1.0
+      );
       
-      // Temporal confidence: consider recent detection patterns
-      const recentHighEnergy = recentDetections.current.filter(d => d.energy > energyThreshold * 0.6).length;
-      const temporalConfidence = Math.min(recentHighEnergy / 4, 1.0);
-      
-      // Adaptive confidence: bonus for exceeding adaptive thresholds
-      const adaptiveBonus = (midFreq - barkThreshold) / barkThreshold * 0.5;
-      
-      const confidence = Math.min(((energyConfidence + freqConfidence + balanceConfidence + temporalConfidence) / 4) + adaptiveBonus, 1.0);
-      
-      // Enhanced dog identification based on spectral and temporal characteristics
-      const spectralRange = Math.floor((spectralCentroid - 10) / 30) % 3;
-      const energyRange = Math.floor(totalEnergy / 50000) % 3;
-      const dogId = ((spectralRange + energyRange) % 3) + 1;
+      // Simplified dog identification
+      const dogId = (Math.floor(spectralCentroid / 50) % 3) + 1;
       
       lastBarkTime.current = currentTime;
       handleBarkDetected(confidence, dogId);
